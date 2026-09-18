@@ -21,7 +21,7 @@
   "crons": [
     {
       "path": "/api/collect?days=1",
-      "schedule": "0 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
