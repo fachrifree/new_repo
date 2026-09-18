@@ -31,7 +31,7 @@ export default async function handler(req,res){
     }
     await client.query('UPDATE collection_runs SET finished_at=now(),fetched_count=$1,inserted_count=$2,status=$3 WHERE id=$4',[rows.length,inserted,'success',runId]);
     res.setHeader('Cache-Control','no-store');
-    return res.status(200).json({ok:true,fetched:rows.length,inserted,runId});
+    return res.status(200).json({ok:true,fetched:rows.length,inserted,runId,articles:rows});
   }catch(e){
     if(runId) await client.query('UPDATE collection_runs SET finished_at=now(),status=$1,error=$2 WHERE id=$3',['error',String(e.message||e),runId]).catch(()=>{});
     return res.status(500).json({ok:false,error:String(e.message||e)});
