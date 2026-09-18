@@ -1,3 +1,4 @@
+export const config = { maxDuration: 30 };
 import pg from 'pg';
 import { analyze } from './_lib/analyze.js';
 
@@ -72,7 +73,7 @@ export default async function handler(req, res) {
     const recentRun = await client.query(`
       SELECT id
       FROM collection_runs
-      WHERE source='google-news-rss'
+      WHERE source='news-rss'
         AND query=$1
         AND status='success'
         AND finished_at > now() - interval '2 minutes'
@@ -101,33 +102,50 @@ export default async function handler(req, res) {
 
     const rr = await client.query(
       'INSERT INTO collection_runs(source,query,status) VALUES($1,$2,$3) RETURNING id',
-      ['google-news-rss', q, 'running']
+      ['news-rss', q, 'running']
     );
     runId = rr.rows[0].id;
 
     const when = days <= 1 ? '1d' : days <= 7 ? '7d' : '30d';
-    const feedUrl = new URL('https://news.google.com/rss/search');
-    feedUrl.searchParams.set('q', q + ' when:' + when);
-    feedUrl.searchParams.set('hl', 'id');
-    feedUrl.searchParams.set('gl', 'ID');
-    feedUrl.searchParams.set('ceid', 'ID:id');
 
-    const r = await fetch(feedUrl, {
-      headers: {
-        'user-agent': 'Mozilla/5.0 SentimentCommandCenter/1.0',
-        'accept': 'application/rss+xml, application/xml, text/xml'
-      },
-      signal: AbortSignal.timeout(12000)
-    });
-    if (!r.ok) throw new Error('Google News RSS HTTP ' + r.status);
+    const googleUrl = new URL('https://news.google.com/rss/search');
+    googleUrl.searchParams.set('q', q + ' when:' + when);
+    googleUrl.searchParams.set('hl', 'id');
+    googleUrl.searchParams.set('gl', 'ID');
+    googleUrl.searchParams.set('ceid', 'ID:id');
 
-    const xml = await r.text();
+    const bingUrl = new URL('https://www.bing.com/news/search');
+    bingUrl.searchParams.set('q', q);
+    bingUrl.searchParams.set('format', 'rss');
+    bingUrl.searchParams.set('setlang', 'id-ID');
+
+    const fetchRss = async (url, label) => {
+      const r = await fetch(url, {
+        headers: {
+          'user-agent': 'Mozilla/5.0 (compatible; SentimentCommandCenter/1.0)',
+          'accept': 'application/rss+xml, application/xml, text/xml, */*'
+        },
+        signal: AbortSignal.timeout(8000)
+      });
+      if (!r.ok) throw new Error(label + ' HTTP ' + r.status);
+      const text = await r.text();
+      if (!/<item>[\s\S]*?<\/item>/i.test(text)) throw new Error(label + ' returned no RSS items');
+      return { text, label };
+    };
+
+    const result = await Promise.any([
+      fetchRss(googleUrl, 'Google News'),
+      fetchRss(bingUrl, 'Bing News')
+    ]);
+
+    const xml = result.text;
+    const provider = result.label;
     const parsed = parseGoogleNews(xml).slice(0, 250);
 
     const prepared = parsed.map(a => {
       const x = analyze((a.title || '') + ' ' + (a.domain || ''));
       return {
-        source: 'Google News',
+        source: provider,
         source_type: 'news',
         external_id: a.external_id,
         url: a.url,
@@ -139,7 +157,7 @@ export default async function handler(req, res) {
         topic: x.topic,
         risk_score: x.risk,
         metadata: {
-          aggregator: 'google-news-rss',
+          aggregator: provider.toLowerCase().replace(/\s+/g,'-') + '-rss',
           publisher_url: a.source_url || null
         }
       };
