@@ -1,4 +1,10 @@
 {
+  "rewrites": [
+    {
+      "source": "/api/sentiment",
+      "destination": "https://br-lucky-king-b3liquce-sentimentapi.compute.c-4.ap-southeast-1.aws.neon.tech/"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
@@ -16,12 +22,6 @@
           "value": "geolocation=(), microphone=(), camera=()"
         }
       ]
-    }
-  ],
-  "crons": [
-    {
-      "path": "/api/collect?days=1",
-      "schedule": "0 0 * * *"
     }
   ]
 }
