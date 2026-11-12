@@ -70,7 +70,7 @@ SCENES = [
         ("Sampai jumpa!", None),
     ], tail=2.4),
 ]
-GAP = 0.32
+GAP = 0.26
 LEAD = 0.55
 TAIL = 0.75
 
@@ -85,9 +85,31 @@ def load_wav_44k(path):
     return np.frombuffer(raw, dtype=np.float32).copy()
 
 
+EDGE_VOICE = os.environ.get("KBKB_VOICE", "id-ID-GadisNeural")
+EDGE_ARGS = ["--rate=+12%", "--pitch=+6Hz"]
+
+
 def tts(text, path):
-    subprocess.run(["espeak-ng", *VOICE, "-w", path, text], check=True)
-    a = load_wav_44k(path)
+    """Neural voice via edge-tts (natural); falls back to offline espeak-ng/MBROLA."""
+    mp3 = path[:-4] + ".mp3"
+    cmd = ["edge-tts", "--voice", EDGE_VOICE, *EDGE_ARGS, "--text", text, "--write-media", mp3]
+    proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
+    if proxy:
+        cmd[1:1] = ["--proxy", proxy]
+    ok = False
+    if os.environ.get("KBKB_TTS", "edge") == "edge":
+        for _ in range(3):
+            r = subprocess.run(cmd, capture_output=True)
+            if r.returncode == 0 and os.path.exists(mp3) and os.path.getsize(mp3) > 1000:
+                ok = True
+                break
+        if not ok:
+            print("  ! edge-tts unavailable, falling back to espeak-ng", file=sys.stderr)
+    if ok:
+        a = load_wav_44k(mp3)
+    else:
+        subprocess.run(["espeak-ng", *VOICE, "-w", path, text], check=True)
+        a = load_wav_44k(path)
     # trim leading/trailing silence
     nz = np.where(np.abs(a) > 0.01)[0]
     if len(nz):

@@ -1,6 +1,6 @@
 # Kenapa Begini? Kenapa Begitu? — Eps. 1: Kenapa Langit Berwarna Biru?
 
-Video pendek vertikal (1080×1920, 30 fps, ±83 detik) untuk Shorts / Reels / TikTok.
+Video pendek vertikal (1080×1920, 30 fps, ±88 detik) untuk Shorts / Reels / TikTok.
 
 ![thumbnail](thumbnail.jpg)
 
@@ -22,15 +22,15 @@ Video pendek vertikal (1080×1920, 30 fps, ±83 detik) untuk Shorts / Reels / Ti
 
 ## Membuat ulang video
 
-Semua dibuat offline dan prosedural: animasi (pycairo), narasi TTS (espeak-ng + suara MBROLA Indonesia),
-musik & efek suara (numpy), encoding (ffmpeg).
+Animasi (pycairo), narasi suara neural Indonesia `id-ID-GadisNeural` via edge-tts
+(otomatis fallback ke espeak-ng + MBROLA bila offline), musik & efek suara (numpy), encoding (ffmpeg).
 
 ```bash
 sudo apt-get install -y ffmpeg espeak-ng mbrola-id1 libcairo2-dev pkg-config
-pip install numpy pycairo
+pip install numpy pycairo edge-tts
 python3 make_video.py            # -> ep01-kenapa-langit-biru.mp4
 python3 make_video.py --stills   # satu PNG per adegan untuk dicek
 ```
 
 Naskah ada di daftar `SCENES` di `make_video.py`; ubah teksnya, timing animasi & subtitle ikut menyesuaikan.
-Untuk suara yang lebih natural, rekam ulang narasi manusia (atau TTS lain) dan ganti trek suaranya.
+Ganti suara: `KBKB_VOICE=id-ID-ArdiNeural python3 make_video.py` (suara pria). Paksa mode offline: `KBKB_TTS=espeak`.
