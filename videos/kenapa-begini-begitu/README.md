@@ -7,6 +7,7 @@ dibawakan oleh **Tanya**, si anak penasaran.
 |------|-------|--------|
 | 1 | Kenapa Langit Berwarna Biru? | [`ep01-langit-biru/`](ep01-langit-biru/) |
 | 2 | Kenapa Air Laut Asin? | [`ep02-laut-asin/`](ep02-laut-asin/) |
+| 3 | Kenapa Bentuk Bulan Berubah-ubah? | [`ep03-bentuk-bulan/`](ep03-bentuk-bulan/) |
 
 ## Struktur
 
